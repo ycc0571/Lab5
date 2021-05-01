@@ -1,16 +1,122 @@
 // script.js
 
 const img = new Image(); // used to load image from <input> and draw to canvas
+const submit = document.querySelector("button[type=submit]");
+const memeform = document.querySelector("form");
+const c = document.getElementById('user-image');
+const ctx = c.getContext('2d');
+const clear = document.querySelector("button[type=reset]");
+const read = document.querySelector("button[type=button]");
+const fileimg = document.querySelector("#image-input");
+const volume = document.getElementById('volume-group');
+var voiceSelect = document.getElementById('voice-selection');
+var synth = window.speechSynthesis;
+var voices = [];
+
+
+function populateVoiceList() {
+  voices = synth.getVoices();
+  voiceSelect.disabled = false;
+
+  for(var i = 0; i < voices.length ; i++) {
+    var option = document.createElement('option');
+    option.textContent = voices[i].name + ' (' + voices[i].lang + ')';
+
+    if(voices[i].default) {
+      option.textContent += ' -- DEFAULT';
+    }
+
+    option.setAttribute('data-lang', voices[i].lang);
+    option.setAttribute('data-name', voices[i].name);
+    voiceSelect.appendChild(option);
+  }
+}
+
+populateVoiceList();
+if (speechSynthesis.onvoiceschanged !== undefined) {
+  speechSynthesis.onvoiceschanged = populateVoiceList;
+}
+
 
 // Fires whenever the img object loads a new image (such as with img.src =)
 img.addEventListener('load', () => {
-  // TODO
-
+  submit.disabled = false;
+  clear.disabled = true;
+  read.disabled = true;
+  ctx.fillStyle = "black";
+  ctx.clearRect(0,0,400,400);
+  ctx.fillRect(0,0,400,400);
+  ctx.drawImage(img, getDimmensions(400, 400, img.width, img.height).startX, getDimmensions(400, 400, img.width, img.height).startY, getDimmensions(400, 400, img.width, img.height).width, getDimmensions(400, 400, img.width, img.height).height);
   // Some helpful tips:
   // - Fill the whole Canvas with black first to add borders on non-square images, then draw on top
   // - Clear the form when a new image is selected
   // - If you draw the image to canvas here, it will update as soon as a new image is selected
 });
+
+
+fileimg.addEventListener('change', function(e) {
+  const imgURL = URL.createObjectURL(e.target.files[0])
+  img.src = imgURL;
+  img.alt = fileimg.name;
+});
+
+
+memeform.addEventListener('submit', function(e) {
+  e.preventDefault();
+  var top = document.getElementById("text-top").value;
+  var bottom = document.getElementById("text-bottom").value;
+  ctx.font = "30px Arial";
+  ctx.fillStyle = "white";
+  ctx.textAlign = "center";
+  ctx.fillText(top, 200, 50);
+  ctx.fillText(bottom, 200, 375);
+  submit.disabled = true;
+  clear.disabled = false;
+  read.disabled = false;
+});
+
+
+clear.addEventListener('click', function(e) {
+  submit.disabled = false;
+  clear.disabled = true;
+  read.disabled = true;
+  ctx.clearRect(0,0,400,400);
+})
+
+
+read.addEventListener('click', function(e) {
+  e.preventDefault();
+  var top = document.getElementById("text-top").value;
+  var bottom = document.getElementById("text-bottom").value;
+  var utterance = new SpeechSynthesisUtterance(top);
+  var utterance1 = new SpeechSynthesisUtterance(bottom);
+  var selectedOption = voiceSelect.selectedOptions[0].getAttribute('data-name');
+  for(var i = 0; i < voices.length ; i++) {
+    if(voices[i].name === selectedOption) {
+      utterance.voice = voices[i];
+      utterance1.voice = voices[i];
+    }
+  }
+  const vol = document.querySelector("input[type=range]")
+  utterance.volume = vol.value/100;
+  utterance1.volume = vol.value/100;
+  speechSynthesis.speak(utterance);
+  speechSynthesis.speak(utterance1);
+})
+
+
+volume.addEventListener('input', function(e) {
+  const vol = document.querySelector("input[type=range]")
+  if(vol.value == 0){
+    document.querySelector("div>img").src = 'icons/volume-level-0.svg';
+  }else if(vol.value <= 33){
+    document.querySelector("div>img").src = 'icons/volume-level-1.svg';
+  }else if(vol.value <= 66){
+    document.querySelector("div>img").src = 'icons/volume-level-2.svg';
+  }else{
+    document.querySelector("div>img").src = 'icons/volume-level-3.svg';
+  }
+})
 
 /**
  * Takes in the dimensions of the canvas and the new image, then calculates the new

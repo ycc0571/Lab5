@@ -15,6 +15,7 @@ var voices = [];
 
 
 function populateVoiceList() {
+  voiceSelect.remove(0);
   voices = synth.getVoices();
   voiceSelect.disabled = false;
 
